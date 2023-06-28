@@ -28,6 +28,9 @@ package com.bc.zarr;
 
 import org.junit.Test;
 
+import java.io.InputStream;
+import java.io.IOException;
+import java.io.OutputStream;
 import java.util.Map;
 
 import static org.junit.Assert.assertEquals;
@@ -117,6 +120,34 @@ public class CompressorFactoryTest {
             fail("IllegalArgumentException expected");
         } catch (IllegalArgumentException expected) {
             assertEquals("Compressor id:'kkkkkkk' not supported.", expected.getMessage());
+        }
+    }
+
+    @Test
+    public void registerNewCompressor() {
+        final String id = "test";
+        CompressorFactory.registerCompressor(id, TestCompressor.class);
+        final Compressor compressor = CompressorFactory.create(id, TestUtils.createMap("level", 1));
+        assertNotNull(compressor);
+        assertEquals(id, compressor.getId());
+    }
+
+    static class TestCompressor extends Compressor {
+        public TestCompressor(Map<String, Object> properties) {
+        }
+
+        public String getId() {
+          return "test";
+        }
+
+        public String toString() {
+          return getId();
+        }
+
+        public void compress(InputStream is, OutputStream os) throws IOException {
+        }
+
+        public void uncompress(InputStream is, OutputStream os) throws IOException {
         }
     }
 }

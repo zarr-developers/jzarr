@@ -49,7 +49,24 @@ import java.util.zip.InflaterInputStream;
 
 public class CompressorFactory {
 
+    private static final Map<String, Class<? extends Compressor>> registeredCompressors = defaultCompressors();
+
+    private static Map<String, Class<? extends Compressor>> defaultCompressors() {
+      Map<String, Class<? extends Compressor>> compressors = new HashMap<String, Class<? extends Compressor>>();
+      compressors.put("null", NullCompressor.class);
+      compressors.put("zlib", ZlibCompressor.class);
+      compressors.put("blosc", BloscCompressor.class);
+      return compressors;
+    }
+
     public final static Compressor nullCompressor = new NullCompressor();
+
+
+    public static void registerCompressor(String id, Class<? extends Compressor> compressor) {
+        if (id != null && !registeredCompressors.containsKey(id)) {
+            registeredCompressors.put(id, compressor);
+        }
+    }
 
     /**
      * @return the properties of the default compressor as a key/value map.
@@ -111,14 +128,20 @@ public class CompressorFactory {
      * @throws IllegalArgumentException If it is not able to create a Compressor.
      */
     public static Compressor create(String id, Map<String, Object> properties) {
-        if ("null".equals(id)) {
-            return nullCompressor;
+        try {
+            if (registeredCompressors.containsKey(id)) {
+                Class<? extends Compressor> c = registeredCompressors.get(id);
+                if (c.equals(NullCompressor.class)) {
+                  return nullCompressor;
+                }
+                return c.getDeclaredConstructor(Map.class).newInstance(properties);
+            }
         }
-        if ("zlib".equals(id)) {
-            return new ZlibCompressor(properties);
-        }
-        if ("blosc".equals(id)) {
-            return new BloscCompressor(properties);
+        catch (ReflectiveOperationException e) {
+            if (e.getCause() instanceof IllegalArgumentException) {
+                throw (IllegalArgumentException) e.getCause();
+            }
+            throw new IllegalArgumentException("Could not get compressor for id:'" + id + "'", e);
         }
         throw new IllegalArgumentException("Compressor id:'" + id + "' not supported.");
     }
@@ -159,7 +182,7 @@ public class CompressorFactory {
     private static class ZlibCompressor extends Compressor {
         private final int level;
 
-        private ZlibCompressor(Map<String, Object> map) {
+        protected ZlibCompressor(Map<String, Object> map) {
             final Object levelObj = map.get("level");
             if (levelObj == null) {
                 this.level = 1; //default value
@@ -242,7 +265,7 @@ public class CompressorFactory {
         private final String cname;
         private final int nthreads;
 
-        private BloscCompressor(Map<String, Object> map) {
+        protected BloscCompressor(Map<String, Object> map) {
             final Object cnameObj = map.get(keyCname);
             if (cnameObj == null) {
                 cname = defaultCname;

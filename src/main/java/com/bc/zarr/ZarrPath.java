@@ -26,7 +26,7 @@
 
 package com.bc.zarr;
 
-class ZarrPath {
+public class ZarrPath {
     final String storeKey;
 
     ZarrPath(String storeKey) {

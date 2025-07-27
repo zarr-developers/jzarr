@@ -122,14 +122,14 @@ public class CompressorFactoryTest {
 
     @Test
     public void createBloscValidCnames() {
-        String[] cnames = { "zstd", "blosclz", "lz4", "lz4hc", "zlib" };
+        String[] cnames = {"zstd", "blosclz", "lz4", "lz4hc", "zlib"};
         for (int i = 0; i < cnames.length; i += 1) {
             final Compressor compressor = CompressorFactory.create("blosc", "cname", cnames[i]);
             assertNotNull(compressor);
             assertEquals("blosc", compressor.getId());
             assertEquals(
-                "compressor=blosc/cname=" + cnames[i] +
-                "/clevel=5/blocksize=0/shuffle=1", compressor.toString());
+                    "compressor=blosc/cname=" + cnames[i] +
+                            "/clevel=5/blocksize=0/shuffle=1", compressor.toString());
         }
     }
 
@@ -141,74 +141,93 @@ public class CompressorFactoryTest {
         } catch (IllegalArgumentException expected) {
             assertEquals("blosc: compressor not supported: 'unsupported'; expected one of [zstd, blosclz, lz4, lz4hc, zlib]", expected.getMessage());
         }
-   }
+    }
 
-   @Test
-   public void createBloscValidClevel() {
-       final Compressor compressor = CompressorFactory.create("blosc", "clevel", 1);
-       assertNotNull(compressor);
-       assertEquals("blosc", compressor.getId());
-       assertEquals(
-           "compressor=blosc/cname=lz4" +
-           "/clevel=1/blocksize=0/shuffle=1", compressor.toString());
-   }
+    @Test
+    public void createBloscValidClevel() {
+        final Compressor compressor = CompressorFactory.create("blosc", "clevel", 1);
+        assertNotNull(compressor);
+        assertEquals("blosc", compressor.getId());
+        assertEquals(
+                "compressor=blosc/cname=lz4" +
+                        "/clevel=1/blocksize=0/shuffle=1", compressor.toString());
+    }
 
-   @Test
-   public void createBloscInvalidClevel() {
-       try {
-           CompressorFactory.create("blosc", "clevel", -1);
-           fail("IllegalArgumentException expected");
-       } catch (IllegalArgumentException expected) {
-           assertEquals("blosc: clevel parameter must be between 0 and 9 but was: -1", expected.getMessage());
-       }
+    @Test
+    public void createBloscInvalidClevel() {
+        try {
+            CompressorFactory.create("blosc", "clevel", -1);
+            fail("IllegalArgumentException expected");
+        } catch (IllegalArgumentException expected) {
+            assertEquals("blosc: clevel parameter must be between 0 and 9 but was: -1", expected.getMessage());
+        }
 
-       try {
-           CompressorFactory.create("blosc", "clevel", 10);
-           fail("IllegalArgumentException expected");
-       } catch (IllegalArgumentException expected) {
-           assertEquals(
-               "blosc: clevel parameter must be between 0 and 9 but was: 10",
-               expected.getMessage());
-       }
-   }
+        try {
+            CompressorFactory.create("blosc", "clevel", 10);
+            fail("IllegalArgumentException expected");
+        } catch (IllegalArgumentException expected) {
+            assertEquals(
+                    "blosc: clevel parameter must be between 0 and 9 but was: 10",
+                    expected.getMessage());
+        }
+    }
 
-   @Test
-   public void createBloscValidShuffles() {
-       int[] shuffles = { 0, 1, 2 };
-       for (int i = 0; i < shuffles.length; i += 1) {
-           final Compressor compressor = CompressorFactory.create("blosc", "shuffle", shuffles[i]);
-           assertNotNull(compressor);
-           assertEquals("blosc", compressor.getId());
-           assertEquals(
-               "compressor=blosc/cname=lz4" +
-               "/clevel=5/blocksize=0/shuffle=" +
-               shuffles[i], compressor.toString());
-       }
-   }
+    @Test
+    public void createBloscValidShuffles() {
+        int[] shuffles = {0, 1, 2};
+        for (int i = 0; i < shuffles.length; i += 1) {
+            final Compressor compressor = CompressorFactory.create("blosc", "shuffle", shuffles[i]);
+            assertNotNull(compressor);
+            assertEquals("blosc", compressor.getId());
+            assertEquals(
+                    "compressor=blosc/cname=lz4" +
+                            "/clevel=5/blocksize=0/shuffle=" +
+                            shuffles[i], compressor.toString());
+        }
+    }
 
-   @Test
-   public void createBloscInvalidShuffle() {
-       try {
-           CompressorFactory.create("blosc", "shuffle", -1);
-           fail("IllegalArgumentException expected");
-       } catch (IllegalArgumentException expected) {
-           assertEquals(
-               "blosc: shuffle type not supported: '-1'; expected one of [0 (NOSHUFFLE), 1 (BYTESHUFFLE), 2 (BITSHUFFLE)]",
-               expected.getMessage());
-       }
-  }
+    @Test
+    public void createBloscInvalidShuffle() {
+        try {
+            CompressorFactory.create("blosc", "shuffle", -1);
+            fail("IllegalArgumentException expected");
+        } catch (IllegalArgumentException expected) {
+            assertEquals(
+                    "blosc: shuffle type not supported: '-1'; expected one of [0 (NOSHUFFLE), 1 (BYTESHUFFLE), 2 (BITSHUFFLE)]",
+                    expected.getMessage());
+        }
+    }
 
-  @Test
-  public void createBloscValidBlockSizes() {
-      int[] blockSizes = { 0, 1, 20 };
-      for (int i = 0; i < blockSizes.length; i += 1) {
-          final Compressor compressor = CompressorFactory.create("blosc", "blocksize", blockSizes[i]);
-          assertNotNull(compressor);
-          assertEquals("blosc", compressor.getId());
-          assertEquals(
-              "compressor=blosc/cname=lz4" +
-              "/clevel=5/blocksize=" + blockSizes[i] +
-              "/shuffle=1", compressor.toString());
-      }
-  }
+    @Test
+    public void createBloscValidBlockSizes() {
+        int[] blockSizes = {0, 1, 20};
+        for (int i = 0; i < blockSizes.length; i += 1) {
+            final Compressor compressor = CompressorFactory.create("blosc", "blocksize", blockSizes[i]);
+            assertNotNull(compressor);
+            assertEquals("blosc", compressor.getId());
+            assertEquals(
+                    "compressor=blosc/cname=lz4" +
+                            "/clevel=5/blocksize=" + blockSizes[i] +
+                            "/shuffle=1", compressor.toString());
+        }
+    }
+
+    @Test
+    public void registerNewCompressor() {
+        final String id = "test";
+        CompressorFactory.registerCompressor(id, TestUtils.TestCompressor.class);
+        Compressor compressor = CompressorFactory.create(id, TestUtils.createMap("level", 1));
+        assertNotNull(compressor);
+        assertEquals(id, compressor.getId());
+        assertEquals(TestUtils.TestCompressor.class, compressor.getClass());CompressorFactory.registerCompressor(id, TestUtils.TestCompressor.class);
+
+        // Replacement
+        CompressorFactory.registerCompressor(id, CompressorFactory.BloscCompressor.class);
+        compressor = CompressorFactory.create(id);
+        assertNotNull(compressor);
+        // Expected not to match.
+        assertEquals("blosc", compressor.getId());
+        assertEquals(CompressorFactory.BloscCompressor.class, compressor.getClass());
+
+    }
 }

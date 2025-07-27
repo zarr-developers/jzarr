@@ -40,7 +40,6 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.zip.Deflater;
@@ -51,6 +50,17 @@ import java.util.zip.InflaterInputStream;
 public class CompressorFactory {
 
     public final static Compressor nullCompressor = new NullCompressor();
+
+    private static final Map<String, Class<? extends Compressor>> registeredCompressors = defaultCompressors();
+
+    private static Map<String, Class<? extends Compressor>> defaultCompressors() {
+        Map<String, Class<? extends Compressor>> compressors = new HashMap<>();
+        compressors.put("null", NullCompressor.class);
+        compressors.put("zlib", ZlibCompressor.class);
+        compressors.put("blosc", BloscCompressor.class);
+
+        return compressors;
+    }
 
     /**
      * @return the properties of the default compressor as a key/value map.
@@ -67,6 +77,26 @@ public class CompressorFactory {
         map.putAll(BloscCompressor.defaultProperties);
 
         return map;
+    }
+
+    /**
+     * Add or replace a Compressor class for a given id.
+     *
+     * @param id         the type of the compression algorithm
+     * @param compressor the class to instantiate
+     */
+    public static void registerCompressor(String id, Class<? extends Compressor> compressor) {
+        if (id != null) {
+            registeredCompressors.put(id, compressor);
+        }
+    }
+
+    public static String[] listRegisteredCompressorIds() {
+        return registeredCompressors.keySet().toArray(new String[0]);
+    }
+
+    public static Map<String, Class<? extends Compressor>> listRegisteredCompressors() {
+        return new HashMap<>(registeredCompressors);
     }
 
     /**
@@ -92,7 +122,7 @@ public class CompressorFactory {
      * Creates a new {@link Compressor} instance according to the id and the given properties.
      *
      * @param id           the type of the compression algorithm
-     * @param keyValuePair an even count of key value pairs defining the compressor specific properties
+     * @param keyValuePair an even count of key value pairs defining the compressor-specific properties
      * @return a new Compressor instance according to the id and the properties
      * @throws IllegalArgumentException If it is not able to create a Compressor.
      */
@@ -107,20 +137,27 @@ public class CompressorFactory {
      * Creates a new {@link Compressor} instance according to the id and the given properties.
      *
      * @param id         the type of the compression algorithm
-     * @param properties a Map containing the compressor specific properties
+     * @param properties a Map containing the compressor-specific properties
      * @return a new Compressor instance according to the id and the properties
      * @throws IllegalArgumentException If it is not able to create a Compressor.
      */
     public static Compressor create(String id, Map<String, Object> properties) {
-        if ("null".equals(id)) {
-            return nullCompressor;
+        try {
+            if (registeredCompressors.containsKey(id)) {
+                Class<? extends Compressor> c = registeredCompressors.get(id);
+                if (c.equals(NullCompressor.class)) {
+                    return nullCompressor;
+                }
+                return c.getDeclaredConstructor(Map.class).newInstance(properties);
+            }
+        } catch (ReflectiveOperationException e) {
+            if (e.getCause() instanceof IllegalArgumentException) {
+                throw (IllegalArgumentException) e.getCause();
+            }
+
+            throw new IllegalArgumentException("Could not create compressor with id:'" + id + "'", e);
         }
-        if ("zlib".equals(id)) {
-            return new ZlibCompressor(properties);
-        }
-        if ("blosc".equals(id)) {
-            return new BloscCompressor(properties);
-        }
+
         throw new IllegalArgumentException("Compressor id:'" + id + "' not supported.");
     }
 
@@ -160,7 +197,7 @@ public class CompressorFactory {
     private static class ZlibCompressor extends Compressor {
         private final int level;
 
-        private ZlibCompressor(Map<String, Object> map) {
+        protected ZlibCompressor(Map<String, Object> map) {
             final Object levelObj = map.get("level");
             if (levelObj == null) {
                 this.level = 1; //default value
@@ -230,12 +267,12 @@ public class CompressorFactory {
         public final static String[] supportedCnames = new String[]{"zstd", "blosclz", defaultCname, "lz4hc", "zlib"/*, "snappy"*/};
 
         public final static Map<String, Object> defaultProperties = new HashMap<String, Object>() {{
-                    put(keyCname, defaultCname);
-                    put(keyClevel, defaultCLevel);
-                    put(keyShuffle, defaultShuffle);
-                    put(keyBlocksize, defaultBlocksize);
-                    put(keyNumThreads, defaultNumThreads);
-                }};
+            put(keyCname, defaultCname);
+            put(keyClevel, defaultCLevel);
+            put(keyShuffle, defaultShuffle);
+            put(keyBlocksize, defaultBlocksize);
+            put(keyNumThreads, defaultNumThreads);
+        }};
 
         private final int clevel;
         private final int blocksize;
@@ -243,7 +280,7 @@ public class CompressorFactory {
         private final String cname;
         private final int nthreads;
 
-        private BloscCompressor(Map<String, Object> map) {
+        protected BloscCompressor(Map<String, Object> map) {
             final Object cnameObj = map.get(keyCname);
             if (cnameObj == null) {
                 cname = defaultCname;
@@ -330,8 +367,8 @@ public class CompressorFactory {
         @Override
         public String toString() {
             return "compressor=" + getId()
-                   + "/cname=" + cname + "/clevel=" + clevel
-                   + "/blocksize=" + blocksize + "/shuffle=" + shuffle;
+                    + "/cname=" + cname + "/clevel=" + clevel
+                    + "/blocksize=" + blocksize + "/shuffle=" + shuffle;
         }
 
         @Override
@@ -364,16 +401,15 @@ public class CompressorFactory {
             os.write(outBuffer.array());
         }
 
-        private BufferSizes cbufferSizes(ByteBuffer cbuffer) {
+        protected BufferSizes cbufferSizes(ByteBuffer cbuffer) {
             NativeLongByReference nbytes = new NativeLongByReference();
             NativeLongByReference cbytes = new NativeLongByReference();
             NativeLongByReference blocksize = new NativeLongByReference();
             IBloscDll.blosc_cbuffer_sizes(cbuffer, nbytes, cbytes, blocksize);
             BufferSizes bs = new BufferSizes(nbytes.getValue().longValue(),
-                                             cbytes.getValue().longValue(),
-                                             blocksize.getValue().longValue());
+                    cbytes.getValue().longValue(),
+                    blocksize.getValue().longValue());
             return bs;
         }
     }
 }
-

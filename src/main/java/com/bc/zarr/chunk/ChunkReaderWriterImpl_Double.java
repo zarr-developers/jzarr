@@ -29,6 +29,7 @@ import com.bc.zarr.Compressor;
 import com.bc.zarr.storage.Store;
 import ucar.ma2.Array;
 import ucar.ma2.DataType;
+import ucar.ma2.IndexIterator;
 
 import javax.imageio.stream.ImageInputStream;
 import javax.imageio.stream.ImageOutputStream;
@@ -69,18 +70,44 @@ public class ChunkReaderWriterImpl_Double extends ChunkReaderWriter {
         }
     }
 
+    protected boolean isFillOnly(Array array) {
+        if (fill == null) {
+            return false;
+        }
+        final IndexIterator iter = array.getIndexIterator();
+        final double fillValue = fill.doubleValue();
+        if (Double.isNaN(fillValue)) {
+            while (iter.hasNext()) {
+                if (! Double.isNaN(iter.getDoubleNext())) {
+                    return false;
+                }
+            }
+        } else {
+            while (iter.hasNext()) {
+                if (iter.getDoubleNext() != fillValue) {
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
+
     @Override
     public void write(String storeKey, Array array) throws IOException {
-        try (
-                final ImageOutputStream iis = new MemoryCacheImageOutputStream(new ByteArrayOutputStream());
-                final InputStream is = new ZarrInputStreamAdapter(iis);
-                final OutputStream os = store.getOutputStream(storeKey)
-        ) {
-            final double[] doubles = (double[]) array.get1DJavaArray(DataType.DOUBLE);
-            iis.setByteOrder(order);
-            iis.writeDoubles(doubles, 0, doubles.length);
-            iis.seek(0);
-            compressor.compress(is, os);
+        if (isFillOnly(array)) {
+            store.delete(storeKey);
+        } else {
+            try (
+                    final ImageOutputStream iis = new MemoryCacheImageOutputStream(new ByteArrayOutputStream());
+                    final InputStream is = new ZarrInputStreamAdapter(iis);
+                    final OutputStream os = store.getOutputStream(storeKey)
+            ) {
+                final double[] doubles = (double[]) array.get1DJavaArray(DataType.DOUBLE);
+                iis.setByteOrder(order);
+                iis.writeDoubles(doubles, 0, doubles.length);
+                iis.seek(0);
+                compressor.compress(is, os);
+            }
         }
     }
 }

@@ -33,6 +33,20 @@
 
     <developers>
         <developer>
+            <id>SabineEmbacher</id>
+            <name>Sabine Embacher</name>
+            <roles>
+                <role>maintainer</role>
+            </roles>
+        </developer>
+        <developer>
+            <id>TonioF</id>
+            <name>Tonio Fincke</name>
+            <roles>
+                <role>maintainer</role>
+            </roles>
+        </developer>
+        <developer>
             <id>joshmoore</id>
             <name>Josh Moore</name>
             <roles>
@@ -119,23 +133,7 @@
         <dependency>
             <groupId>org.assertj</groupId>
             <artifactId>assertj-core</artifactId>
-            <version>3.19.0</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.lasersonlab</groupId>
-            <artifactId>s3fs</artifactId>
-            <version>2.2.3</version>
-            <exclusions>
-                <exclusion>
-                    <groupId>com.fasterxml.jackson.core</groupId>
-                    <artifactId>jackson-databind</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>com.fasterxml.jackson.dataformat</groupId>
-                    <artifactId>jackson-dataformat-cbor</artifactId>
-                </exclusion>
-            </exclusions>
+            <version>3.27.7</version>
             <scope>test</scope>
         </dependency>
     </dependencies>
@@ -154,7 +152,7 @@
     <repositories>
         <repository>
             <id>unidata.releases</id>
-            <url>https://artifacts.unidata.ucar.edu/content/repositories/unidata-releases</url>
+            <url>https://artifacts.unidata.ucar.edu/repository/unidata-all/</url>
             <snapshots><enabled>false</enabled></snapshots>
         </repository>
     </repositories>
@@ -265,14 +263,6 @@
                     </excludes>
                 </configuration>
             </plugin>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                    <artifactId>maven-surefire-plugin</artifactId>
-                    <version>3.0.0-M5</version>
-                    <configuration>
-                        <includes>**/*.java</includes>
-                    </configuration>
-             </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-gpg-plugin</artifactId>

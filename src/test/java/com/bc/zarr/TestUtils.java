@@ -98,4 +98,23 @@ public class TestUtils {
         }
         return deleted;
     }
+
+    public static class TestCompressor extends Compressor {
+        public TestCompressor(Map<String, Object> properties) {
+        }
+
+        public String getId() {
+            return "test";
+        }
+
+        public String toString() {
+            return getId();
+        }
+
+        public void compress(InputStream is, OutputStream os) throws IOException {
+        }
+
+        public void uncompress(InputStream is, OutputStream os) throws IOException {
+        }
+    }
 }

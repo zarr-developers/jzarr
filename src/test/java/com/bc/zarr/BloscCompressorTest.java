@@ -54,10 +54,10 @@ public class BloscCompressorTest {
     public static void beforeClass() {
 
         final String bloscJnaLibraryPath = System.getProperty("bloscJnaLibraryPath");
-        System.err.println(bloscJnaLibraryPath);
         final boolean bloscPathDefined = bloscJnaLibraryPath != null;
         final boolean bloscAvailable = isBloscAvailable();
         if (bloscPathDefined && !bloscAvailable) {
+            System.err.println(bloscJnaLibraryPath);
             Assert.fail("Property for blosc has been configured, but blosc is not available.");
         } else {
             Assume.assumeTrue("Blosc library path is not configured. Blosc specifc tests are not executed.", bloscAvailable); // test is skipped if blosc is not available
